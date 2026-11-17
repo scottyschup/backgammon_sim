@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
     <meta name="theme-color" content="#152a28">
     <title>Backgammon Lab</title>
+    <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="dist/style.css">
   </head>
 
@@ -21,6 +22,10 @@
       <section class="scores" aria-label="Distance to goal">
         <div id="black-score"></div>
         <div class="dtg-label">DISTANCE TO GOAL <button id="info" aria-label="Explain distance to goal">ⓘ</button></div>
+        <div class="round-counter" title="One completed round is one completed turn by each player.">
+          <span class="round-value" id="rounds">0</span>
+          <span>Rounds</span>
+        </div>
         <div id="red-score"></div>
       </section>
       <section class="board-area">
@@ -31,13 +36,14 @@
             <path id="direction-head" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"
               stroke-linejoin="round" />
           </svg>
-          <div id="dice" aria-label="Dice"></div><button id="roll" class="primary">Roll dice</button>
+          <div id="dice" aria-label="Dice" hidden></div>
+          <button id="roll" class="primary">Roll dice</button>
+          <button id="end" class="primary" hidden>End Turn</button>
         </div>
       </section>
       <section class="action-area">
         <div class="turn-row">
-          <div id="status" role="status" aria-live="polite"></div><button id="end" class="primary" hidden>End
-            turn</button>
+          <div id="status" role="status" aria-live="polite"></div>
         </div>
         <div id="move-options" aria-label="Available moves"></div>
         <div class="toolbar"><label class="switch"><input id="hints" type="checkbox" checked><span></span>Show available
@@ -77,14 +83,7 @@
         <div class="dialog-head">
           <h2>Distance to goal</h2><button aria-label="Close explanation">✕</button>
         </div>
-        <p>Each checker contributes its own point number. Bar = 25; borne off = 0.</p>
-        <p>For each exposed singleton on its own point v, add (25 − v) / 2 to raw distance and to the ± label. A
-          singleton is exposed when an opposing checker lies 1–12, 15, 16, 18, 20, or 24 pips behind it in that
-          opponent’s direction of travel.</p>
-        <p>Opposing checkers on the bar are checked from position 25. This uses your geometric exposure rule, without
-          checking dice, blocks, or hit probabilities. The ± amount is a heuristic range, not statistical uncertainty.
-        </p>
-        <p id="raw-counts"></p>
+        <p>This is the total sum of the dice needed to get all your checkers home.</p>
       </form>
     </dialog>
     <script type="module" src="dist/app.mjs"></script>

@@ -1,9 +1,9 @@
 export const other=c=>c==='black'?'red':'black';
 export const relative=(i,c)=>c==='black'?i+1:24-i;
 export const physical=(p,c)=>c==='black'?p-1:24-p;
-export function initial(){const s={points:Array(24).fill(null),bar:{black:0,red:0},off:{black:0,red:0},turn:'black',dice:[],rolled:[],opening:true,winner:null};for(const c of ['black','red'])for(const [p,n]of [[24,2],[13,5],[8,3],[6,5]])s.points[physical(p,c)]={color:c,count:n};return s;}
+export function initial(){const s={points:Array(24).fill(null),bar:{black:0,red:0},off:{black:0,red:0},turn:'black',completedTurns:0,dice:[],rolled:[],opening:true,winner:null};for(const c of ['black','red'])for(const [p,n]of [[24,2],[13,5],[8,3],[6,5]])s.points[physical(p,c)]={color:c,count:n};return s;}
 export function single(s,die){const c=s.turn,m=[];if(s.winner)return m;const sources=s.bar[c]?['bar']:s.points.flatMap((v,i)=>v?.color===c?[i]:[]);const home=!s.bar[c]&&s.points.every((v,i)=>v?.color!==c||relative(i,c)<=6);for(const from of sources){const p=from==='bar'?25:relative(from,c),q=p-die;if(q<=0){if(!home||from==='bar')continue;if(q<0&&s.points.some((v,i)=>v?.color===c&&relative(i,c)>p))continue;m.push({from,to:'off',die});}else{const to=physical(q,c),v=s.points[to];if(!v||v.color===c||v.count===1)m.push({from,to,die});}}return m;}
-export function apply(s,m){const n=structuredClone(s),c=s.turn;if(m.from==='bar')n.bar[c]--;else if(--n.points[m.from].count===0)n.points[m.from]=null;if(m.to==='off')n.off[c]++;else{const v=n.points[m.to];if(v&&v.color!==c){n.bar[v.color]++;n.points[m.to]=null;}if(n.points[m.to])n.points[m.to].count++;else n.points[m.to]={color:c,count:1};}const j=n.dice.indexOf(m.die);if(j>=0)n.dice.splice(j,1);if(n.off[c]===15)n.winner=c;return n;}
+export function apply(s,m){const n=structuredClone(s),c=s.turn;if(m.from==='bar')n.bar[c]--;else if(--n.points[m.from].count===0)n.points[m.from]=null;if(m.to==='off')n.off[c]++;else{const v=n.points[m.to];if(v&&v.color!==c){n.bar[v.color]++;n.points[m.to]=null;}if(n.points[m.to])n.points[m.to].count++;else n.points[m.to]={color:c,count:1};}const j=n.dice.indexOf(m.die);if(j>=0)n.dice.splice(j,1);if(n.off[c]===15&&!s.winner){n.winner=c;n.completedTurns=(s.completedTurns??0)+1;}return n;}
 export function sequences(s){if(!s.dice.length||s.winner)return [[]];let paths=[];for(const d of new Set(s.dice))for(const m of single(s,d))for(const rest of sequences(apply(s,m)))paths.push([m,...rest]);if(!paths.length)return [[]];const max=Math.max(...paths.map(p=>p.length));paths=paths.filter(p=>p.length===max);if(max===1&&new Set(s.dice).size>1){const high=Math.max(...paths.map(p=>p[0].die));paths=paths.filter(p=>p[0].die===high);}return paths;}
 export function options(s,from){const out=[];for(const path of sequences(s)){let used=[];for(const m of path){if(!used.length?m.from!==from:m.from!==used.at(-1).to)break;used.push(m);const to=m.to;if(!out.some(o=>o.to===to&&o.moves.map(x=>x.die).join()==used.map(x=>x.die).join()))out.push({to,moves:[...used]});if(to==='off')break;}}return out;}
 export function movable(s){return [...new Set(sequences(s).filter(p=>p.length).map(p=>p[0].from))];}
@@ -44,4 +44,15 @@ export function placementOptions(s,from,count=1){
 export function destinationMatches(plan,destination,allowSplit=false){return allowSplit?plan.destinations.includes(destination):plan.destinations.every(d=>d===destination);}
 export function destinationChoice(plans,destination,allowSplit=false){
  return plans.find(p=>destinationMatches(p,destination,allowSplit));
+}
+
+// Count a completed turn once, at handoff; a winning turn is counted by apply instead.
+export function endTurn(state) {
+  const next = structuredClone(state);
+  if (state.winner || !state.rolled.length || sequences(state).some(path => path.length)) return next;
+  next.completedTurns = (state.completedTurns ?? 0) + 1;
+  next.turn = other(state.turn);
+  next.dice = [];
+  next.rolled = [];
+  return next;
 }

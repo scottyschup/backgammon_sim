@@ -57,3 +57,33 @@ Mode-switch update: entering or leaving Free Setup freezes the current board ang
 For unequal dice and two selected checkers, either highlighted split destination chooses the full legal split play. Highlighting and destination resolution use the same predicate. Doubles retain the shared-destination restriction. Regression tests verify 3–1 from 8 lands one checker on 5 and one on 7 when either point is clicked. Browser QA was blocked by browser access policy for this update.
 
 Home-region interaction: the correct home half of the right edge is a selectable destination, with no Bear off button and no OFF labels/counts. It highlights when the selected checker/group has a legal all-off move. Clicking it applies that legal plan. Borne-off checkers render on edge along the same physical edge in opposite halves, each thickness 1/24 the edge-to-middle distance. Motion ends at the actual edge-on rectangle and commits the stack only on arrival. Free setup can select home regions to add/remove checkers directly. Clicking the opponent's home cannot bear off the current player's checkers.
+
+## Distance-only roll estimates
+
+Each player shows max / avg / min with up to two decimal places based on the displayed,
+exposure-adjusted DTG divided by 3 / 7 / 24. Seven is the requested average
+assumption; counting doubles gives an actual mean available roll total of 49/6
+(about 8.17). These are fractional distance equivalents, not predicted turns or
+strict bounds: blocks, hits, and bearing-off waste are excluded. The native
+roll-value tooltip explains these assumptions.
+
+The DTG dialog uses the requested short definition. A star beside the active
+player's DTG replaces the turn text; it is absent in setup, before the opening
+player is determined, and after victory.
+
+Dice use white SVG pips directly on the colored die, without a glyph frame.
+Roll dice plays a one-second animation in place before committing one actual
+roll. Conflicting controls are disabled during the animation; reduced-motion
+preferences skip it. Score groups center over each half of the visible board,
+and the available-moves switch joins the controls at the right of the toolbar.
+
+The SVG favicon at icons/favicon.svg combines a black checker and a red die.
+Normal roll animations and results use the current player’s dice color; the
+opening roll retains one black die and one red die.
+
+## Rounds played
+
+The center counter shows completed rounds: two completed player turns per round.
+Turn handoffs and a final winning turn count once each. The count is stored in
+the position, so undo, redo, reset, and reload preserve the appropriate value.
+Older saves have no turn history and begin tracking at zero after this update.

@@ -49,3 +49,94 @@ for(const to of [90,180]){const frames=rotationFrames(0,to,1000,590),middle=fram
 const {departingState}=await import('./dist/motion.mjs');s=initial();paths=motionPaths(s,[{from:5,to:3,die:2},{from:5,to:3,die:2}]);const transit=departingState(s,paths);assert.equal(transit.points[5].count,3);assert.equal(transit.points[3],null);assert.equal(s.points[5].count,5);console.log('Passed: moving checkers leave the origin immediately, destination stays empty during transit, and saved source state is unchanged.');
 s=initial();s.dice=[3,1];const splitPlans=placementOptions(s,physical(8,'black'),2);for(const to of [physical(5,'black'),physical(7,'black')]){const p=destinationChoice(splitPlans,to,true);assert(p);let next=structuredClone(s);for(const m of p.moves)next=apply(next,m);assert.equal(next.points[physical(5,'black')].count,1);assert.equal(next.points[physical(7,'black')].count,1);assert.equal(next.dice.length,0);}console.log('Passed: either split destination moves both checkers with unequal dice.');
 s=empty();put(s,4,'black',2);s.off.black=13;s.dice=[4,4,4,4];const bearing=destinationChoice(placementOptions(s,physical(4,'black'),2),'off');assert(bearing);for(const m of bearing.moves)s=apply(s,m);assert.equal(s.off.black,15);assert.equal(s.winner,'black');s=empty();put(s,4,'black',1);put(s,8,'black',1);s.dice=[4];assert.equal(destinationChoice(placementOptions(s,physical(4,'black'),1),'off'),undefined);console.log('Passed: explicit legal grouped bear-off and victory; no bear-off control for ineligible positions.');
+
+const { formatRollEstimates, rollEstimates } = await import('./dist/metrics.mjs');
+assert.deepEqual(rollEstimates(168), {
+  max: 56,
+  avg: 24,
+  min: 7,
+});
+assert.equal(formatRollEstimates(168), '56 / 24 / 7');
+assert.equal(formatRollEstimates(0), '0 / 0 / 0');
+assert.equal(formatRollEstimates(27), '9 / 3.86 / 1.13');
+assert.equal(formatRollEstimates(375), '125 / 53.57 / 15.63');
+console.log('Passed: roll estimate order, zero, fractional rounding, and large distances.');
+
+assert.equal(formatRollEstimates(2.1), '0.7 / 0.3 / 0.09');
+const { pipLayout } = await import('./dist/dice.mjs');
+for (let value = 1; value <= 6; value++) {
+  const pips = pipLayout(value);
+  assert.equal(pips.length, value);
+  assert.equal(new Set(pips.map(pip => pip.join(','))).size, value);
+  assert(pips.every(([x, y]) => x >= 8 && x <= 92 && y >= 8 && y <= 92));
+}
+console.log('Passed: compact metric precision and distinct, inset pips for all six die faces.');
+
+// The shared physical bar is each color's own point 25, independent of whose turn it is.
+for (const color of ['black', 'red']) {
+  for (const count of [1, 2, 15]) {
+    const position = initial();
+    position.points.fill(null);
+    position.bar[color] = count;
+    position.off.black = 15;
+    position.off.red = 15;
+    position.off[color] -= count;
+    assert(valid(position));
+    assert.deepEqual(dtg(position, color), {
+      raw: 25 * count,
+      value: 25 * count,
+      variance: 0,
+    });
+  }
+  for (let die = 1; die <= 6; die++) {
+    const position = initial();
+    position.points.fill(null);
+    position.bar[color] = 1;
+    position.off.black = 15;
+    position.off.red = 15;
+    position.off[color] = 14;
+    position.turn = color;
+    position.dice = [die];
+    const entry = single(position, die).find(move => move.from === 'bar');
+    assert(entry);
+    assert.equal(entry.to, physical(25 - die, color));
+    const entered = apply(position, entry);
+    assert(valid(entered));
+    assert.equal(dtg(entered, color).raw, 25 - die);
+  }
+}
+console.log('Passed: B25/R25 bar distance, multiple barred checkers, and every entry roll for both colors.');
+
+const { endTurn } = await import('./dist/engine.mjs');
+let roundState = initial();
+assert.equal(roundState.completedTurns, 0);
+assert.equal(endTurn(roundState).completedTurns, 0);
+roundState.opening = false;
+roundState.rolled = [3, 1];
+roundState.dice = [];
+const firstCompleted = endTurn(roundState);
+assert.equal(firstCompleted.completedTurns, 1);
+assert.equal(roundState.completedTurns, 0);
+assert.equal(Math.floor(firstCompleted.completedTurns / 2), 0);
+assert.equal(endTurn(firstCompleted).completedTurns, 1);
+firstCompleted.rolled = [6, 2];
+const fullRound = endTurn(firstCompleted);
+assert.equal(fullRound.completedTurns, 2);
+assert.equal(Math.floor(fullRound.completedTurns / 2), 1);
+assert.equal(JSON.parse(JSON.stringify(fullRound)).completedTurns, 2);
+const playableTurn = initial();
+playableTurn.rolled = [3, 1];
+playableTurn.dice = [3, 1];
+assert.equal(endTurn(playableTurn).completedTurns, 0);
+const winningTurn = initial();
+winningTurn.points.fill(null);
+winningTurn.points[0] = { color: 'black', count: 1 };
+winningTurn.off = { black: 14, red: 15 };
+winningTurn.completedTurns = 1;
+winningTurn.dice = [1];
+winningTurn.rolled = [1, 2];
+const won = apply(winningTurn, single(winningTurn, 1)[0]);
+assert.equal(won.winner, 'black');
+assert.equal(won.completedTurns, 2);
+assert.equal(endTurn(won).completedTurns, 2);
+console.log('Passed: complete rounds, immutable handoffs, no duplicate counts, saved progress, and final winning turn.');

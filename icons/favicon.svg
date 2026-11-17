@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <radialGradient id="checker" cx="35%" cy="25%" r="75%">
+      <stop stop-color="#56616a"/>
+      <stop offset=".65" stop-color="#232c32"/>
+      <stop offset="1" stop-color="#11191e"/>
+    </radialGradient>
+    <linearGradient id="die" x2="0" y2="1">
+      <stop stop-color="#e47962"/>
+      <stop offset="1" stop-color="#a93232"/>
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="31" fill="url(#checker)" stroke="#849198" stroke-width="2"/>
+  <circle cx="32" cy="32" r="25" fill="none" stroke="#66737a" stroke-width="2"/>
+  <g transform="rotate(-12 32 30)">
+    <rect x="17" y="15" width="31" height="32" rx="7" fill="#080d11" opacity=".5"/>
+    <rect x="16" y="12" width="32" height="32" rx="7" fill="url(#die)" stroke="#f6ac91"/>
+    <g fill="#fff8ed">
+      <circle cx="24" cy="20" r="3"/>
+      <circle cx="40" cy="20" r="3"/>
+      <circle cx="32" cy="28" r="3"/>
+      <circle cx="24" cy="36" r="3"/>
+      <circle cx="40" cy="36" r="3"/>
+    </g>
+  </g>
+</svg>
