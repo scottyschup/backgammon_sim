@@ -140,3 +140,33 @@ assert.equal(won.winner, 'black');
 assert.equal(won.completedTurns, 2);
 assert.equal(endTurn(won).completedTurns, 2);
 console.log('Passed: complete rounds, immutable handoffs, no duplicate counts, saved progress, and final winning turn.');
+
+// Blocked bar rolls can pass without consuming or losing a checker; an open entry cannot pass.
+for (const color of ['black', 'red']) {
+  const blocked = initial();
+  const enemy = color === 'black' ? 'red' : 'black';
+  blocked.points.fill(null);
+  blocked.turn = color;
+  blocked.opening = false;
+  blocked.bar[color] = 1;
+  blocked.off[color] = 14;
+  blocked.off[enemy] = 11;
+  put(blocked, 1, enemy, 2);
+  put(blocked, 2, enemy, 2);
+  blocked.rolled = [1, 2];
+  blocked.dice = [1, 2];
+  assert(valid(blocked));
+  assert.equal(movable(blocked).length, 0);
+  const passed = endTurn(blocked);
+  assert.equal(passed.turn, enemy);
+  assert.equal(passed.bar[color], 1);
+  assert.equal(passed.completedTurns, 1);
+  assert.deepEqual(passed.rolled, []);
+  assert.deepEqual(blocked.rolled, [1, 2]);
+  assert(valid(passed));
+  blocked.points[physical(1, enemy)] = null;
+  blocked.off[enemy] += 2;
+  assert(movable(blocked).length > 0);
+  assert.equal(endTurn(blocked).completedTurns, 0);
+}
+console.log('Passed: both colors can pass blocked bar rolls; available entries prevent passing.');

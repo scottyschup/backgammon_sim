@@ -39,13 +39,17 @@
           <div id="dice" aria-label="Dice" hidden></div>
           <button id="roll" class="primary">Roll dice</button>
           <button id="end" class="primary" hidden>End Turn</button>
+          <button id="blocked-roll" type="button" aria-label="No valid moves, click to continue" hidden>
+            <span id="blocked-dice" aria-hidden="true"></span>
+            <span class="blocked-note">No valid moves, click to continue</span>
+          </button>
         </div>
       </section>
       <section class="action-area">
         <div class="turn-row">
           <div id="status" role="status" aria-live="polite"></div>
+          <div id="move-options" aria-label="Available moves"></div>
         </div>
-        <div id="move-options" aria-label="Available moves"></div>
         <div class="toolbar"><label class="switch"><input id="hints" type="checkbox" checked><span></span>Show available
             moves</label>
           <div class="tools"><button id="undo" title="Undo" aria-label="Undo">↶</button><button id="redo" title="Redo"

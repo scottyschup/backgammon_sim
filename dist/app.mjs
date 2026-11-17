@@ -341,23 +341,32 @@ function render() {
   $('flip').title = 'Rotate board 180°';
   $('turn-select').value = state.turn;
   const canMove = state.dice.length && movable(state).length > 0;
+  const blockedOnBar = mode === 'play' && state.bar[state.turn] > 0
+    && state.rolled.length > 0 && state.dice.length > 0 && !canMove && !state.winner;
   const text = message || (mode === 'setup' ? (selected !== null ? 'Choose a destination' : 'Arrange your position') : state.winner ? `${name(state.winner)} wins!` : state.opening && !state.rolled.length ? 'Roll to decide who starts' : canMove ? (selected !== null ? 'Choose a destination' : 'Choose a checker') : state.rolled.length ? (state.dice.length ? 'No legal moves — end turn' : 'Moves complete — end turn') : `${name(state.turn)} to roll`);
   $('status').replaceChildren(document.createTextNode(text));
   const small = document.createElement('small');
   small.textContent = mode === 'setup' ? 'Tap a stack to move one checker' : state.opening && !state.rolled.length ? 'One die per player · higher die starts' : state.rolled.length ? 'Moves use each die separately' : 'Move toward your own point 1';
   $('status').append(small);
   $('roll').hidden = mode !== 'play' || !!state.rolled.length || !!state.winner;
-  $('end').hidden = mode !== 'play' || !state.rolled.length || !!canMove || !!state.winner;
-  $('dice').hidden = !state.rolled.length || !$('end').hidden;
+  $('end').hidden = mode !== 'play' || !state.rolled.length || !!canMove || !!state.winner || blockedOnBar;
+  $('blocked-roll').hidden = !blockedOnBar;
+  if (blockedOnBar) {
+    $('blocked-roll').setAttribute('aria-label',
+      `${name(state.turn)} rolled ${state.rolled.join(' and ')}. No valid moves, click to continue`);
+  }
+  $('dice').hidden = !state.rolled.length || !$('end').hidden || blockedOnBar;
   const remaining = [...state.dice];
   $('dice').replaceChildren();
+  $('blocked-dice').replaceChildren();
+  const diceContainer = blockedOnBar ? $('blocked-dice') : $('dice');
   const ds = state.rolled.length === 2 && state.rolled[0] === state.rolled[1] ? Array(4).fill(state.rolled[0]) : state.rolled;
   for (const [dieIndex, d] of ds.entries()) {
     const ix = remaining.indexOf(d);
     const color = state.diceColors?.[dieIndex % 2] || state.turn;
     const n = createDie(d, color, ix < 0);
     if (ix >= 0) remaining.splice(ix, 1);
-    $('dice').append(n);
+    diceContainer.append(n);
   }
   $('move-options').replaceChildren();
   if (selected !== null && mode === 'play') for (const o of placementOptions(state, selected, selectedCount)) { if (o.destinations.every(d => d === 'off') || !$('hints').checked) continue;
@@ -414,6 +423,7 @@ $('end').onclick = () => { checkpoint();
   render();
 
 };
+$('blocked-roll').onclick = $('end').onclick;
 $('setup').onclick = () => { if (mode !== 'setup') viewOverride = boardAngle ?? automaticAngle(state, mode, flipped);
   mode = 'setup';
   selected = null;

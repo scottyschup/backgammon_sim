@@ -71,6 +71,11 @@
 - Avoid page scrolling when the board and controls can fit. Do not solve one viewport by making another orientation unusable.
 - Use checkboxes or explicit pairs of buttons for two-state choices; avoid binary dropdowns. Show both alternatives when one checkbox would be ambiguous.
 - Minimize interaction steps and preserve stable control sizes and positions as their state changes.
+- Avoid unnecessary cumulative layout shift (CLS). Reserve space for dynamic controls and status text so
+  their appearance, disappearance, or wrapping does not move the board or other controls.
+- Keep move-option buttons to the right of the status text in a consistently sized area. Allow that area
+  to scroll when needed, and verify unchanged board and toolbar geometry with options visible and absent
+  in mobile portrait, landscape, and desktop layouts.
 - Keep related adjustments aligned, with values adjacent to the controls they describe.
 - Keep essential scores and status close to the board without covering playable regions.
 - Give interactive controls appropriate semantics, accessible names, keyboard support, visible focus, and usable touch targets.
