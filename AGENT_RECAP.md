@@ -53,24 +53,27 @@ README.md
 - The Pages export was produced by combining the modular source files and stripping module declarations.
 - Its syntax and ZIP integrity were checked, but the actual external deployment was **not successfully inspected**.
 
-The modular source ZIP contains:
+The current repository uses ordinary browser assets:
 
 ```text
 backgammon-lab/
-  .openai/hosting.json
   README.md
   RUNNING.md
-  test.mjs
-  dist/
-    index.html
-    style.css
-    app.mjs
-    engine.mjs
-    view.mjs
-    motion.mjs
+  test.js
+  index.html
+  scripts/
+    app.js
+    dice.js
+    engine.js
+    metrics.js
+    motion.js
+    view.js
+  style/
+    app.css
+  icons/
 ```
 
-Do not assume that directory structure is the user’s current repository layout.
+Run `node test.js` and serve the repository root with `python3 -m http.server 8000`.
 
 ### URLs and verification limitations
 
@@ -217,7 +220,7 @@ Result: one checker on 5, one on 7; both dice used.
 
 Clicking a destination must place **all selected checkers there**.
 
-A previous bug chose the first plan where *any* selected checker reached the clicked point, splitting the group. That was fixed.
+A previous bug chose the first plan where _any_ selected checker reached the clicked point, splitting the group. That was fixed.
 
 Examples:
 
@@ -535,13 +538,13 @@ There are 15 unordered unequal opening rolls.
 
 The dice difference can allow two checkers from different starting points to meet:
 
-| Roll | Play | New protected point |
-| --- | --- | ---: |
-| 3–1 | 8/5, 6/5 | 5 |
-| 4–2 | 8/4, 6/4 | 4 |
-| 5–3 | 8/3, 6/3 | 3 |
-| 6–4 | 8/2, 6/2 | 2 |
-| 6–1 | 13/7, 8/7 | 7 |
+| Roll | Play      | New protected point |
+| ---- | --------- | ------------------: |
+| 3–1  | 8/5, 6/5  |                   5 |
+| 4–2  | 8/4, 6/4  |                   4 |
+| 5–3  | 8/3, 6/3  |                   3 |
+| 6–4  | 8/2, 6/2  |                   2 |
+| 6–1  | 13/7, 8/7 |                   7 |
 
 The prominent `+5`, `+4`, etc. were interpreted as point numbers being established, **not evaluation bonuses**.
 

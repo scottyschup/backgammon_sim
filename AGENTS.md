@@ -39,17 +39,9 @@
 
 ## Code style
 
-- Use descriptive names, standard JavaScript practices, small coherent files, and verified dead-code removal.
+Use ~/.agents/skills/code-like-shannon/SKILL.md when writing code.
+
 - Comment complex or unusual logic, especially full-turn legality, coordinate transforms, checker identity tracking, and animation state transitions.
-- Keep source lines below 120 characters.
-- Apply the rule of threes: with three or more attributes, arguments, parameters, array elements, object properties, or similar items, place each on its own line.
-- Alphabetize comparable items only when their order is independent, including appropriate object keys, CSS declarations, attributes, and function groups.
-- Preserve execution, dependency, semantic, override, coordinate, and geometry order. Do not blindly sort arrays, script loading, object spreads, side effects, CSS fallbacks, or shorthand/longhand declarations.
-- Use blank lines between logical sections, initialization, event bindings, function groups, and major HTML regions.
-- Consolidate repeated CSS selectors within the same media-query scope. Use meaningful state/context selectors for intentional overrides instead of accumulating source-order patches or `!important` rules.
-- Use native `title` tooltips and accessible names for icon buttons. Do not add custom tooltip bubbles on click or focus.
-- Run the repository's actual formatting command when one exists. Keep its configuration aligned with these conventions; do not assume `npm run format` exists.
-- Prefer pnpm when package tooling is needed. Do not add tooling dependencies merely to serve the app.
 
 ## Work and verification
 

@@ -2,10 +2,10 @@
 
 Buildless, mobile-first local two-player backgammon and position editor.
 
-- `dist/engine.mjs`: pure board model, legal complete-turn generation, move prefixes, pip count, exposure-adjusted DTG.
-- `dist/app.mjs`: SVG board, player interaction, setup mode, local persistence, undo/redo.
-- `dist/style.css`: responsive portrait / landscape layouts.
-- `node test.mjs`: rule cases, all initial dice combinations, 12 deterministic complete games, exposure distances.
+- `scripts/engine.js`: pure board model, legal complete-turn generation, move prefixes, pip count, exposure-adjusted DTG.
+- `scripts/app.js`: SVG board, player interaction, setup mode, local persistence, undo/redo.
+- `style/app.css`: responsive portrait / landscape layouts.
+- `node test.js`: rule cases, all initial dice combinations, 12 deterministic complete games, exposure distances.
 
 Physical point index 0 is Black 1 / Red 24. Relative labels are derived. Bar coordinate is 25 and off is 0.
 
@@ -14,7 +14,6 @@ Exposure DTG: raw pip count plus (25 − v) / 2 for each exposed singleton on it
 The legal move engine examines full turns before enabling a prefix; enforces bar entry, hitting, closed points, maximum dice usage, forced higher die, four uses for doubles, exact/oversize bearing off, and victory. NHP evaluation and ranking layers are deferred. Cube and match scoring are outside this initial checker-play version.
 
 QA: 390×844 portrait and 844×390 landscape in real iframe viewports. Completed 3–1 as 8/5 6/5 through mobile UI; DTG follows the revised exposure penalty; turn advanced. Revised DTG example verified as Black 27 ±10 / Red 24 ±1. The requested Red 23 ±1 conflicts with raw 23 plus adjustment 1; implementation follows the formula.
-
 
 ## Interaction update
 

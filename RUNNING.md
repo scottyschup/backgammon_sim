@@ -6,10 +6,10 @@ From the extracted backgammon-lab directory:
 python3 -m http.server 8000 --directory dist
 ```
 
-Open http://localhost:8000 in your browser. No build or dependency installation is required.
+Open `http://localhost:8000` in your browser. No build or dependency installation is required.
 
 Run the rules and regression checks with Node.js:
 
 ```sh
-node test.mjs
+node test.js
 ```

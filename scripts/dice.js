@@ -1,6 +1,6 @@
 const svgNamespace = 'http://www.w3.org/2000/svg';
 
-export function pipLayout(value) {
+function pipLayout(value) {
   const pips = [];
   if (value % 2 === 1) pips.push([50, 50]);
   if (value >= 2) pips.push([26, 26], [74, 74]);
@@ -9,7 +9,7 @@ export function pipLayout(value) {
   return pips;
 }
 
-export function createDie(value, color, used = false) {
+function createDie(value, color, used = false) {
   const die = document.createElement('span');
   die.className = `die ${color}${used ? ' used' : ''}`;
   die.setAttribute('role', 'img');
@@ -29,20 +29,43 @@ export function createDie(value, color, used = false) {
   return die;
 }
 
-export async function animateDice(container, colors) {
+async function animateDice(container, colors) {
   // Cosmetic faces never consume the game's random source or alter the saved position.
   const dice = colors.map((color, index) => createDie(index === 0 ? 5 : 6, color));
   container.replaceChildren(...dice);
   const frames = [
-    { transform: 'perspective(100px) rotateX(0deg) rotateY(0deg) rotateZ(0deg)' },
-    { transform: 'perspective(100px) rotateX(180deg) rotateY(140deg) rotateZ(12deg)' },
-    { transform: 'perspective(100px) rotateX(360deg) rotateY(280deg) rotateZ(-12deg)' },
-    { transform: 'perspective(100px) rotateX(540deg) rotateY(420deg) rotateZ(12deg)' },
-    { transform: 'perspective(100px) rotateX(720deg) rotateY(720deg) rotateZ(0deg)' },
+    {
+      transform: 'perspective(100px) rotateX(0deg) rotateY(0deg) rotateZ(0deg)',
+    },
+    {
+      transform: 'perspective(100px) rotateX(180deg) rotateY(140deg) rotateZ(12deg)',
+    },
+    {
+      transform: 'perspective(100px) rotateX(360deg) rotateY(280deg) rotateZ(-12deg)',
+    },
+    {
+      transform: 'perspective(100px) rotateX(540deg) rotateY(420deg) rotateZ(12deg)',
+    },
+    {
+      transform: 'perspective(100px) rotateX(720deg) rotateY(720deg) rotateZ(0deg)',
+    },
   ];
-  await Promise.all(dice.map((die, index) => die.animate(frames, {
-    direction: index === 0 ? 'normal' : 'reverse',
-    duration: 1000,
-    easing: 'ease-out',
-  }).finished.catch(() => {})));
+  await Promise.all(
+    dice.map((die, index) =>
+      die
+        .animate(frames, {
+          direction: index === 0 ? 'normal' : 'reverse',
+          duration: 1000,
+          easing: 'ease-out',
+        })
+        .finished.catch(() => {}),
+    ),
+  );
 }
+
+globalThis.BackgammonLab = {
+  ...globalThis.BackgammonLab,
+  animateDice,
+  createDie,
+  pipLayout,
+};
