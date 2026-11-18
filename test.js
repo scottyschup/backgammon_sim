@@ -13,6 +13,7 @@ const {
   dtg,
   initial,
   movable,
+  options,
   physical,
   rollDice,
   selectableCount,
@@ -177,7 +178,7 @@ console.log(
 
 const { automaticAngle, nextRotation, rotationScale, rotationFrames } = globalThis.BackgammonLab;
 s = initial();
-assert.equal(automaticAngle(s), 90);
+assert.equal(automaticAngle(s), 0);
 s.opening = false;
 s.turn = 'black';
 assert.equal(automaticAngle(s), 0);
@@ -451,3 +452,5 @@ for (const color of ['black', 'red']) {
   assert.equal(endTurn(blocked).completedTurns, 0);
 }
 console.log('Passed: both colors can pass blocked bar rolls; available entries prevent passing.');
+
+require('./tests/nhp.cjs');

@@ -1,4 +1,5 @@
-const other = (c) => (c === 'black' ? 'red' : 'black');
+(function initializeEngine(global) {
+  const other = (c) => (c === 'black' ? 'red' : 'black');
 const relative = (i, c) => (c === 'black' ? i + 1 : 24 - i);
 const physical = (p, c) => (c === 'black' ? p - 1 : 24 - p);
 function initial() {
@@ -7,10 +8,12 @@ function initial() {
     bar: { black: 0, red: 0 },
     off: { black: 0, red: 0 },
     turn: 'black',
+    controllers: { black: 'human', red: 'human' },
     completedTurns: 0,
     dice: [],
     rolled: [],
     opening: true,
+    openingTurn: false,
     winner: null,
   };
   for (const c of ['black', 'red'])
@@ -183,6 +186,7 @@ function rollDice(s, random = Math.random) {
     opening = s.opening;
   n.turn = opening ? (a > b ? 'black' : 'red') : s.turn;
   n.opening = false;
+  n.openingTurn = opening;
   n.rolled = [a, b];
   n.dice = a === b ? [a, a, a, a] : [a, b];
   n.diceColors = opening ? ['black', 'red'] : [n.turn, n.turn];
@@ -208,14 +212,15 @@ function endTurn(state) {
   const next = structuredClone(state);
   if (state.winner || !state.rolled.length || sequences(state).some((path) => path.length)) return next;
   next.completedTurns = (state.completedTurns ?? 0) + 1;
+  next.openingTurn = false;
   next.turn = other(state.turn);
   next.dice = [];
   next.rolled = [];
   return next;
 }
 
-globalThis.BackgammonLab = {
-  ...globalThis.BackgammonLab,
+  global.BackgammonLab = {
+    ...global.BackgammonLab,
   apply,
   batchOptions,
   destinationChoice,
@@ -237,4 +242,5 @@ globalThis.BackgammonLab = {
   single,
   threatDistances,
   valid,
-};
+  };
+})(globalThis);

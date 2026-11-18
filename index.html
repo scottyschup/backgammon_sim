@@ -16,20 +16,27 @@
         <h1>Backgammon <b>Lab</b></h1>
       </div>
       <div class="modes" aria-label="Game mode">
-        <button id="play" class="active">Play</button><button id="setup">Free setup</button>
+        <button id="play" class="active">Play</button>
+        <button
+          id="setup"
+          aria-label="Free setup"
+          title="Free setup"
+        >Setup</button>
       </div>
       <button id="menu" aria-label="Open settings" title="Settings">⚙</button>
     </header>
     <main>
       <section class="scores" aria-label="Distance to goal">
         <div id="black-score"></div>
-        <div class="dtg-label">
-          DISTANCE TO GOAL
-          <button id="info" aria-label="Explain distance to goal">ⓘ</button>
-        </div>
         <div class="round-counter" title="One completed round is one completed turn by each player.">
           <span class="round-value" id="rounds">0</span>
-          <span>Rounds</span>
+          <span>Rounds
+            <button
+              id="info"
+              aria-label="Explain distance to goal"
+              title="Distance to goal"
+            >ⓘ</button>
+          </span>
         </div>
         <div id="red-score"></div>
       </section>
@@ -59,10 +66,28 @@
       <section class="action-area">
         <div class="turn-row">
           <div id="status" role="status" aria-live="polite"></div>
-          <div id="move-options" aria-label="Available moves"></div>
+          <div
+            id="move-options"
+            aria-label="Available moves"
+            title="Scroll sideways for more legal moves"
+          ></div>
         </div>
         <div class="toolbar">
-          <label class="switch"><input id="hints" type="checkbox" checked /><span></span>Show available moves</label>
+          <label class="switch">
+            <input
+              id="hints"
+              type="checkbox"
+              aria-label="Show available moves"
+              checked
+            />
+            <span></span>Show moves
+          </label>
+          <button
+            id="pause-nhp"
+            aria-label="Pause NHP players"
+            title="Pause NHP players"
+            hidden
+          >Ⅱ</button>
           <div class="tools">
             <button id="undo" title="Undo" aria-label="Undo">↶</button
             ><button id="redo" title="Redo" aria-label="Redo">↷</button
@@ -95,16 +120,20 @@
           <h2>Game settings</h2>
           <button aria-label="Close settings">✕</button>
         </div>
-        <p>Two humans on one device. NHP decision layers will be added later.</p>
+        <p>Play against a beginner or intermediate NHP, or watch two NHPs. Pause to inspect or undo their moves.</p>
         <label
           >Black
-          <select disabled>
-            <option>Human</option>
+          <select id="black-controller" aria-label="Black player">
+            <option value="human">Human</option>
+            <option value="beginner">Beginner NHP</option>
+            <option value="intermediate">Intermediate NHP</option>
           </select></label
         ><label
           >Red
-          <select disabled>
-            <option>Human</option>
+          <select id="red-controller" aria-label="Red player">
+            <option value="human">Human</option>
+            <option value="beginner">Beginner NHP</option>
+            <option value="intermediate">Intermediate NHP</option>
           </select></label
         ><label
           >Analysis dice
@@ -129,6 +158,7 @@
     <script src="scripts/motion.js"></script>
     <script src="scripts/view.js"></script>
     <script src="scripts/dice.js"></script>
+    <script src="scripts/nhp.js"></script>
     <script src="scripts/app.js"></script>
   </body>
 </html>

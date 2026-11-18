@@ -17,9 +17,9 @@
 - Backgammon Lab is a mobile-first backgammon game, position editor, and foundation for an explainable analysis tool.
 - Preserve working two-human play and Free Setup while adding future capabilities.
 - Keep rule enforcement, board state, diagnostics, player decisions, animation, and presentation separate.
-- Support eventual configurations with two, one, or zero human players through interchangeable player controllers using the same rules engine.
+- Support two, one, or zero human players. Human, beginner NHP, and intermediate NHP use the same rules engine.
 - NHP means non-human player. Its decision system will grow through independently switchable layers of increasing sophistication.
-- Do not implement ranking weights, advanced strategy, NHP skill levels, or additional features merely because this file describes their intended architecture.
+- Beginner and intermediate NHPs are the current tuning phase. Do not add advanced or expert profiles, roll-probability exposure, opponent-response simulations, or deeper search until separately requested.
 - Do not claim planned features are implemented. Verify the repository's current capabilities.
 - Respect the requested phase and any explicit review checkpoint. Complete authorized work without inventing extra approval gates.
 
@@ -65,9 +65,11 @@ Use ~/.agents/skills/code-like-shannon/SKILL.md when writing code.
 - Minimize interaction steps and preserve stable control sizes and positions as their state changes.
 - Avoid unnecessary cumulative layout shift (CLS). Reserve space for dynamic controls and status text so
   their appearance, disappearance, or wrapping does not move the board or other controls.
-- Keep move-option buttons to the right of the status text in a consistently sized area. Allow that area
-  to scroll when needed, and verify unchanged board and toolbar geometry with options visible and absent
-  in mobile portrait, landscape, and desktop layouts.
+- Keep move-option buttons to the right of the status text in a compact, fixed-height horizontal scroll area.
+  Do not reserve several empty rows to avoid CLS. Verify stable board and toolbar geometry with options
+  visible and absent in narrow/wide portrait, landscape, and desktop layouts.
+- Run a geometry preflight before UI changes. Preserve primary title and board dimensions; reclaim unused
+  areas and consolidate related controls instead of adding avoidable layout space.
 - Keep related adjustments aligned, with values adjacent to the controls they describe.
 - Keep essential scores and status close to the board without covering playable regions.
 - Give interactive controls appropriate semantics, accessible names, keyboard support, visible focus, and usable touch targets.
@@ -147,11 +149,11 @@ Use ~/.agents/skills/code-like-shannon/SKILL.md when writing code.
 
 ## Rotation and checker rendering
 
-- In two-human play, start a new game with the board rotated 90 degrees before the opening roll.
-- After the opening roll, rotate to put the winner's home half at the bottom.
-- On End turn, orient the board for the next player, normally through a 180-degree rotation.
+- New game preserves the actual current board angle. A first load starts with Black at the bottom (0 degrees).
+- With two humans, the opening roll rotates the winner’s home half to the bottom.
+- With two humans, End turn faces the next player, normally through 180 degrees. With one human, face that human.
 - Rotation lasts approximately 1.4 seconds. Shrink once to a safe size, rotate at a constant size, then expand at the final angle.
-- Do not expand and shrink again around the halfway point. The opening adjustment may be only 90 degrees.
+- Do not expand and shrink again around the halfway point. New game itself must not start a rotation.
 - Keep all text and numeric labels upright throughout rotation and afterward. Center controls and dice stay readable.
 - Respect reduced-motion preferences and avoid conflicting input while movement is in progress.
 - Render every checker on a point. Do not replace larger stacks with a numeric badge.
@@ -197,7 +199,7 @@ Use ~/.agents/skills/code-like-shannon/SKILL.md when writing code.
 - Raw totals are Black 17 and Red 23. Both singletons are geometrically vulnerable.
 - Adjusted totals are Black `27 (±10)` and Red `24 (±1)`, following the explicit formula. The earlier Red `23 (±1)` example was arithmetically inconsistent.
 
-## Future diagnostics, NHP, and analysis
+## Diagnostics, NHP, and future analysis
 
 - Keep the five requested diagnostics independently inspectable:
   1. The absolute dice difference matches a distance between friendly occupied points, permitting convergence.
@@ -218,3 +220,13 @@ Use ~/.agents/skills/code-like-shannon/SKILL.md when writing code.
 - Keep analysis branches reversible and separate from the live game. Preserve view state while inspecting alternatives.
 - Do not present a custom heuristic score as established playing strength or a win probability without validation.
 - Pip reduction alone usually cannot distinguish non-hitting opening plays that fully use the same dice. Preserve structural diagnostics for those comparisons.
+
+## Current NHP constraints
+
+- Only the actual opening turn uses opening-pattern emphasis. The reply and later turns recompute all features.
+- Evaluate complete legal turns, group equivalent final positions, and keep all five diagnostics inspectable.
+- Beginner is mostly random with weak safety preferences. Intermediate notices patterns more reliably and
+  mixes net adjusted-DTG gain with covers, hits, protected points, and blot creation.
+- Profiles are provisional tuning values, not validated playing strength. Keep randomness injectable for tests.
+- Keep the existing geometric DTG unchanged. Net DTG is one heuristic, not proof of optimal play.
+- Pause NHP work on undo/redo and setup. Cancel stale scheduled work on reset and controller changes.

@@ -1,4 +1,5 @@
-// Distance estimates use the requested seven-pip average assumption.
+(function initializeMetrics(global) {
+  // Distance estimates use the requested seven-pip average assumption.
 // Blocks, hits, and bearing-off waste prevent these from bounding actual turns.
 function rollEstimates(distance) {
   return {
@@ -14,8 +15,9 @@ function formatRollEstimates(distance) {
     .join(' / ');
 }
 
-globalThis.BackgammonLab = {
-  ...globalThis.BackgammonLab,
-  formatRollEstimates,
-  rollEstimates,
-};
+  global.BackgammonLab = {
+    ...global.BackgammonLab,
+    formatRollEstimates,
+    rollEstimates,
+  };
+})(globalThis);

@@ -1,15 +1,19 @@
 # Run locally
 
-From the extracted backgammon-lab directory:
+Open index.html directly, or preview the repository root with:
 
 ```sh
-python3 -m http.server 8000 --directory dist
+python3 -m http.server 8000
 ```
 
-Open `http://localhost:8000` in your browser. No build or dependency installation is required.
+Open http://localhost:8000. Assets use relative paths and ordinary scripts; no build or package installation is required.
 
-Run the rules and regression checks with Node.js:
+Run verification from the repository root with Node.js:
 
 ```sh
 node test.js
 ```
+
+This includes rules, rendering geometry helpers, bar handling, round counting,
+and NHP feature/legality tests plus deterministic complete games. No linter or
+type checker is configured. Use node --check for edited JavaScript files.

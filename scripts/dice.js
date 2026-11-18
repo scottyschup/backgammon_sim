@@ -1,4 +1,5 @@
-const svgNamespace = 'http://www.w3.org/2000/svg';
+(function initializeDice(global) {
+  const svgNamespace = 'http://www.w3.org/2000/svg';
 
 function pipLayout(value) {
   const pips = [];
@@ -63,9 +64,10 @@ async function animateDice(container, colors) {
   );
 }
 
-globalThis.BackgammonLab = {
-  ...globalThis.BackgammonLab,
-  animateDice,
-  createDie,
-  pipLayout,
-};
+  global.BackgammonLab = {
+    ...global.BackgammonLab,
+    animateDice,
+    createDie,
+    pipLayout,
+  };
+})(globalThis);

@@ -2,9 +2,11 @@ const {
   animateDice,
   apply,
   barCheckerLayout,
+  choosePlay,
   createDie,
   departingState,
   destinationChoice,
+  destinationMatches,
   dtg,
   endTurn,
   formatRollEstimates,
@@ -36,7 +38,10 @@ let state = initial(),
   selectedCount = 1,
   movementInProgress = false,
   rollingInProgress = false,
-  viewOverride = null;
+  viewOverride = null,
+  nhpPaused = false,
+  nhpTimer = null,
+  nhpGeneration = 0;
 try {
   const saved = JSON.parse(localStorage.getItem('backgammon-lab-v1'));
   if (saved) {
@@ -44,18 +49,27 @@ try {
     mode = saved.mode || 'play';
     flipped = !!saved.flipped;
     viewOverride = saved.viewOverride ?? null;
+    nhpPaused = saved.nhpPaused ?? false;
   }
 } catch {}
 
 // Older saved games have no turn history from which to reconstruct completed rounds.
 state.completedTurns ??= 0;
+state.controllers ??= { black: 'human', red: 'human' };
+for (const color of ['black', 'red']) {
+  if (![
+    'human',
+    'beginner',
+    'intermediate',
+  ].includes(state.controllers[color])) state.controllers[color] = 'human';
+}
 
 const save = () =>
   !movementInProgress &&
-  localStorage.setItem('backgammon-lab-v1', JSON.stringify({ state, mode, flipped, viewOverride }));
+  localStorage.setItem('backgammon-lab-v1', JSON.stringify({ state, mode, flipped, viewOverride, nhpPaused }));
 
 function checkpoint() {
-  history.push({ state: structuredClone(state), mode });
+  history.push({ state: structuredClone(state), mode, viewAngle: currentBoardAngle() });
   future = [];
 }
 
@@ -94,6 +108,8 @@ function sourceValue(src) {
 }
 
 function pick(src, count = 1) {
+  if (mode === 'play' && state.controllers[state.turn] !== 'human') return;
+
   message = '';
   if (mode === 'setup') {
     if (selected !== null && src !== selected) {
@@ -136,6 +152,7 @@ function pick(src, count = 1) {
               state[w][c]++;
             }
             state.winner = null;
+          state.openingTurn = false;
             selected = null;
           },
         );
@@ -169,12 +186,12 @@ function pick(src, count = 1) {
   }
   render();
 }
-function execute(moves) {
+function execute(moves, explanation = '') {
   checkpoint();
   withMovement(moves, state.turn, () => {
     for (const m of moves) state = apply(state, m);
     selected = null;
-    message = '';
+    message = state.winner ? `${name(state.winner)} wins!` : explanation;
   });
 }
 function checkerElement(p) {
@@ -208,7 +225,7 @@ function withMovement(moves, color, change) {
   render();
   const animations = [],
     ghosts = [];
-  $('board').closest('main').inert = true;
+  setGameBusy(true);
   paths.forEach((p, i) => {
     const start = starts[i],
       end = ends[i];
@@ -250,12 +267,12 @@ function withMovement(moves, color, change) {
     state = finalState;
     movementInProgress = false;
     render();
-    $('board').closest('main').inert = false;
+    setGameBusy(false);
   });
 }
 function draw() {
-  const narrow = matchMedia('(max-width:600px) and (orientation:portrait)').matches,
-    H = narrow ? Math.max(700, (1000 * $('board').clientHeight) / Math.max(1, $('board').clientWidth)) : 590;
+  const narrow = matchMedia('(orientation:portrait)').matches,
+    H = narrow ? Math.max(590, (1000 * $('board').clientHeight) / Math.max(1, $('board').clientWidth)) : 590;
   const svg = el('svg', {
       viewBox: `0 0 1000 ${H}`,
       preserveAspectRatio: 'xMidYMid meet',
@@ -514,6 +531,15 @@ function draw() {
 }
 let boardAngle = null,
   boardAnimation = null;
+
+function currentBoardAngle() {
+  if (boardAngle === null) return viewOverride ?? automaticAngle(state, mode, flipped);
+
+  const angle = parseFloat(getComputedStyle($('board')).getPropertyValue('--board-angle'));
+
+  return Number.isFinite(angle) ? angle : boardAngle;
+}
+
 function orientBoard() {
   const board = $('board'),
     target = nextRotation(boardAngle, viewOverride ?? automaticAngle(state, mode, flipped));
@@ -525,7 +551,10 @@ function orientBoard() {
   const fit = Math.min(width / viewBox.width, height / viewBox.height);
   const radians = (target * Math.PI) / 180;
   const visibleWidth = viewBox.width * Math.abs(Math.cos(radians)) + viewBox.height * Math.abs(Math.sin(radians));
-  document.querySelector('.scores').style.width = `${visibleWidth * fit * rotationScale(target, width, height)}px`;
+  document.querySelector('.scores').style.setProperty(
+    '--board-visible-width',
+    `${visibleWidth * fit * rotationScale(target, width, height)}px`,
+  );
   arrow.style.transform = `rotate(${target}deg)`;
   board.style.setProperty('--board-angle', `${target}deg`);
   board.dataset.orientation = String(((target % 360) + 360) % 360);
@@ -561,6 +590,8 @@ function orientBoard() {
       if (boardAnimation === animation) {
         board.inert = false;
         boardAnimation = null;
+        setGameBusy(movementInProgress || rollingInProgress);
+        scheduleNhpTurn();
       }
     });
 }
@@ -591,8 +622,8 @@ function render() {
         <span class="score-dot ${c}"></span>
         <div>
           <div class="score-name">${name(c)}</div>
-          <div class="score-value">${d.value}${adjustment}${star}</div>
-          <div class="roll-label">Rolls · max / avg / min</div>
+          <div class="score-value" title="Distance to goal">${d.value}${adjustment}${star}</div>
+          <div class="roll-label">Rolls: max / avg / min</div>
           <div class="roll-estimates" title="${estimateTitle}">${formatRollEstimates(d.value)}</div>
         </div>
       </div>`;
@@ -604,6 +635,13 @@ function render() {
   $('flip').disabled = false;
   $('flip').title = 'Rotate board 180°';
   $('turn-select').value = state.turn;
+  for (const color of ['black', 'red']) $(color + '-controller').value = state.controllers[color];
+  const nhpTurn = mode === 'play'
+    && !state.opening
+    && !state.winner
+    && state.controllers[state.turn] !== 'human'
+  ;
+  renderNhpControls();
   const canMove = state.dice.length && movable(state).length > 0;
   const blockedOnBar =
     mode === 'play' &&
@@ -613,7 +651,10 @@ function render() {
     !canMove &&
     !state.winner;
   const text =
-    message ||
+    (nhpTurn && nhpPaused ? `${name(state.turn)} NHP paused` : '')
+    || message
+    || (nhpTurn ? `${name(state.turn)} ${state.controllers[state.turn]} NHP` : '')
+    ||
     (mode === 'setup'
       ? selected !== null
         ? 'Choose a destination'
@@ -632,17 +673,21 @@ function render() {
                 : 'Moves complete — end turn'
               : `${name(state.turn)} to roll`);
   $('status').replaceChildren(document.createTextNode(text));
+  $('status').title = text;
   const small = document.createElement('small');
   small.textContent =
     mode === 'setup'
-      ? 'Tap a stack to move one checker'
+      ? 'Select, then place'
       : state.opening && !state.rolled.length
-        ? 'One die per player · higher die starts'
+        ? 'Higher die starts'
         : state.rolled.length
           ? 'Moves use each die separately'
           : 'Move toward your own point 1';
   $('status').append(small);
   $('roll').hidden = mode !== 'play' || !!state.rolled.length || !!state.winner;
+  $('roll').disabled = nhpTurn;
+  $('end').disabled = nhpTurn;
+  $('blocked-roll').disabled = nhpTurn;
   $('end').hidden = mode !== 'play' || !state.rolled.length || !!canMove || !!state.winner || blockedOnBar;
   $('blocked-roll').hidden = !blockedOnBar;
   if (blockedOnBar) {
@@ -679,15 +724,98 @@ function render() {
   $('redo').disabled = !future.length;
   $('set-dice').disabled = mode !== 'setup';
   draw();
+  setGameBusy(movementInProgress || rollingInProgress);
   save();
+  scheduleNhpTurn();
 }
-$('roll').onclick = async () => {
+
+function renderNhpControls() {
+  const hasNhp = Object.values(state.controllers).some(controller => controller !== 'human');
+  $('pause-nhp').hidden = !hasNhp;
+  $('pause-nhp').textContent = nhpPaused ? '▶' : 'Ⅱ';
+  $('pause-nhp').title = nhpPaused ? 'Resume NHP players' : 'Pause NHP players';
+  $('pause-nhp').setAttribute('aria-label', $('pause-nhp').title);
+}
+
+function setGameBusy(busy) {
+  // Keep pause reachable during movement while blocking every action that could replace the position.
+  for (const selector of [
+    'header',
+    '.scores',
+    '.turn-row',
+    '.tools',
+    '#setup-tools',
+  ]) {
+    document.querySelector(selector).inert = busy;
+  }
+  $('board').inert = busy || Boolean(boardAnimation);
+  $('hints').disabled = busy;
+  const nhpTurn = mode === 'play'
+    && !state.opening
+    && !state.winner
+    && state.controllers[state.turn] !== 'human'
+  ;
+  for (const id of [
+    'roll',
+    'end',
+    'blocked-roll',
+  ]) $(id).disabled = busy || nhpTurn;
+}
+
+function stopNhp(pause) {
+  clearTimeout(nhpTimer);
+  nhpTimer = null;
+  nhpGeneration++;
+  if (pause) nhpPaused = true;
+}
+
+function nhpCanAct() {
+  if (
+    nhpPaused
+    || mode !== 'play'
+    || state.winner
+    || movementInProgress
+    || rollingInProgress
+    || boardAnimation
+    || $('settings').open
+    || $('about').open
+  ) return false;
+
+  if (state.opening) return Object.values(state.controllers).every(controller => controller !== 'human');
+
+  return state.controllers[state.turn] !== 'human';
+}
+
+function scheduleNhpTurn() {
+  if (nhpTimer !== null || !nhpCanAct()) return;
+
+  // Recheck ownership at execution time; undo, setup, reset, and controller changes cancel queued work.
+  const generation = nhpGeneration;
+  nhpTimer = setTimeout(async () => {
+    nhpTimer = null;
+    if (generation !== nhpGeneration || !nhpCanAct()) return;
+
+    if (!state.rolled.length) {
+      await rollCurrentDice();
+
+      return;
+    }
+    if (!movable(state).length) {
+      finishCurrentTurn();
+
+      return;
+    }
+
+    const difficulty = state.controllers[state.turn];
+    const decision = choosePlay(state, difficulty);
+    execute(decision.moves, `${name(state.turn)} ${difficulty} NHP: ${decision.explanation}.`);
+  }, 450);
+}
+
+async function rollCurrentDice() {
   if (rollingInProgress || mode !== 'play' || state.rolled.length || state.winner) return;
   rollingInProgress = true;
-  const main = $('board').closest('main');
-  const header = document.querySelector('header');
-  main.inert = true;
-  header.inert = true;
+  setGameBusy(true);
   $('roll').disabled = true;
   try {
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -708,22 +836,26 @@ $('roll').onclick = async () => {
     selected = null;
   } finally {
     rollingInProgress = false;
-    main.inert = false;
-    header.inert = false;
+    setGameBusy(false);
     $('roll').disabled = false;
     render();
   }
-};
-$('end').onclick = () => {
+}
+function finishCurrentTurn() {
+  if (!state.rolled.length || state.winner || movable(state).length) return;
+
   checkpoint();
   viewOverride = null;
   state = endTurn(state);
   selected = null;
   message = '';
   render();
-};
-$('blocked-roll').onclick = $('end').onclick;
+}
+$('roll').addEventListener('click', rollCurrentDice);
+$('end').addEventListener('click', finishCurrentTurn);
+$('blocked-roll').addEventListener('click', finishCurrentTurn);
 $('setup').onclick = () => {
+  stopNhp(true);
   if (mode !== 'setup') viewOverride = boardAngle ?? automaticAngle(state, mode, flipped);
   mode = 'setup';
   selected = null;
@@ -748,10 +880,12 @@ $('play').onclick = () => {
 };
 $('undo').onclick = () => {
   if (history.length) {
-    future.push({ state: structuredClone(state), mode });
+    stopNhp(true);
+    future.push({ state: structuredClone(state), mode, viewAngle: currentBoardAngle() });
     const prev = history.pop();
     state = prev.state;
     mode = prev.mode;
+    viewOverride = prev.viewAngle;
     selected = null;
     message = '';
     render();
@@ -759,19 +893,29 @@ $('undo').onclick = () => {
 };
 $('redo').onclick = () => {
   if (future.length) {
-    history.push({ state: structuredClone(state), mode });
+    stopNhp(true);
+    history.push({ state: structuredClone(state), mode, viewAngle: currentBoardAngle() });
     const next = future.pop();
     state = next.state;
     mode = next.mode;
+    viewOverride = next.viewAngle;
     selected = null;
     message = '';
     render();
   }
 };
 $('reset').onclick = () => {
+  stopNhp(false);
   checkpoint();
-  viewOverride = null;
+  const angle = currentBoardAngle();
+  const controllers = { ...state.controllers };
+  if (boardAnimation) boardAnimation.cancel();
+  for (const animation of $('direction-arrow').getAnimations()) animation.cancel();
+  boardAnimation = null;
+  boardAngle = angle;
+  viewOverride = angle;
   state = initial();
+  state.controllers = controllers;
   mode = 'play';
   selected = null;
   selectedCount = 1;
@@ -783,14 +927,45 @@ $('flip').onclick = () => {
   render();
 };
 $('hints').onchange = render;
-$('menu').onclick = () => $('settings').showModal();
-$('info').onclick = () => $('about').showModal();
+$('menu').onclick = () => {
+  stopNhp(false);
+  $('settings').showModal();
+};
+$('info').onclick = () => {
+  stopNhp(false);
+  $('about').showModal();
+};
+$('settings').addEventListener('close', scheduleNhpTurn);
+$('about').addEventListener('close', scheduleNhpTurn);
+$('pause-nhp').addEventListener('click', () => {
+  stopNhp(false);
+  nhpPaused = !nhpPaused;
+  if (movementInProgress || rollingInProgress) {
+    renderNhpControls();
+    save();
+
+    return;
+  }
+  render();
+});
+for (const color of ['black', 'red']) {
+  $(color + '-controller').addEventListener('change', event => {
+    checkpoint();
+    stopNhp(false);
+    state.controllers[color] = event.target.value;
+    nhpPaused = false;
+    selected = null;
+    message = '';
+    render();
+  });
+}
 $('turn-select').onchange = (e) => {
   checkpoint();
   state.turn = e.target.value;
   state.dice = [];
   state.rolled = [];
   state.opening = false;
+  state.openingTurn = false;
   selected = null;
   render();
 };
@@ -803,18 +978,22 @@ $('clear').onclick = () => {
   state.rolled = [];
   state.winner = null;
   state.opening = false;
+  state.openingTurn = false;
   selected = null;
   render();
 };
 $('example').onclick = () => {
   checkpoint();
+  const controllers = { ...state.controllers };
   state = initial();
+  state.controllers = controllers;
   state.points.fill(null);
   state.points[4] = { color: 'black', count: 1 };
   state.points[5] = { color: 'black', count: 2 };
   state.points[1] = { color: 'red', count: 1 };
   state.off = { black: 12, red: 14 };
   state.opening = false;
+  state.openingTurn = false;
   selected = null;
   message = 'Exposure example: Black 27 (± 10), Red 24 (± 1).';
   render();
@@ -830,6 +1009,7 @@ $('set-dice').onclick = () => {
   state.diceColors = [state.turn, state.turn];
   state.dice = a === b ? [a, a, a, a] : [a, b];
   state.opening = false;
+  state.openingTurn = false;
   state.winner = null;
   selected = null;
   $('settings').close();

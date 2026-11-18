@@ -1,7 +1,14 @@
-function automaticAngle(state, mode = 'play', flipped = false) {
+(function initializeView(global) {
+  function automaticAngle(state, mode = 'play', flipped = false) {
   const humans = (state.controllers?.black ?? 'human') === 'human' && (state.controllers?.red ?? 'human') === 'human';
-  if (mode !== 'play' || !humans) return flipped ? 180 : 0;
-  return state.opening ? 90 : state.turn === 'black' ? 0 : 180;
+  if (mode !== 'play') return flipped ? 180 : 0;
+  if (!humans) {
+    const redIsOnlyHuman = state.controllers?.red === 'human' && state.controllers?.black !== 'human';
+
+    return redIsOnlyHuman ? 180 : flipped ? 180 : 0;
+  }
+
+  return state.opening ? 0 : state.turn === 'black' ? 0 : 180;
 }
 function nextRotation(current, target) {
   if (current === null) return target;
@@ -49,11 +56,12 @@ function barCheckerLayout(count) {
   });
 }
 
-globalThis.BackgammonLab = {
-  ...globalThis.BackgammonLab,
-  automaticAngle,
-  barCheckerLayout,
-  nextRotation,
-  rotationFrames,
-  rotationScale,
-};
+  global.BackgammonLab = {
+    ...global.BackgammonLab,
+    automaticAngle,
+    barCheckerLayout,
+    nextRotation,
+    rotationFrames,
+    rotationScale,
+  };
+})(globalThis);

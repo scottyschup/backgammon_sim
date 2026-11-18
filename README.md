@@ -4,14 +4,15 @@ Buildless, mobile-first local two-player backgammon and position editor.
 
 - `scripts/engine.js`: pure board model, legal complete-turn generation, move prefixes, pip count, exposure-adjusted DTG.
 - `scripts/app.js`: SVG board, player interaction, setup mode, local persistence, undo/redo.
+- `scripts/nhp.js`: pure legal-play candidates, strategic diagnostics, and beginner/intermediate decision presets.
 - `style/app.css`: responsive portrait / landscape layouts.
-- `node test.js`: rule cases, all initial dice combinations, 12 deterministic complete games, exposure distances.
+- `node test.js`: rule cases, all initial dice combinations, 12 deterministic rules games, four NHP games, exposure distances, and strategy diagnostics.
 
 Physical point index 0 is Black 1 / Red 24. Relative labels are derived. Bar coordinate is 25 and off is 0.
 
 Exposure DTG: raw pip count plus (25 − v) / 2 for each exposed singleton on its own point v. The sum of those additions is shown as ± variance. Opposing on-board or bar checkers trigger geometric exposure at distances 1–12, 15, 16, 18, 20, 24. Blocks/intermediate legality are intentionally excluded from this heuristic. This is not a probability or confidence interval.
 
-The legal move engine examines full turns before enabling a prefix; enforces bar entry, hitting, closed points, maximum dice usage, forced higher die, four uses for doubles, exact/oversize bearing off, and victory. NHP evaluation and ranking layers are deferred. Cube and match scoring are outside this initial checker-play version.
+The legal move engine examines full turns before enabling a prefix; enforces bar entry, hitting, closed points, maximum dice usage, forced higher die, four uses for doubles, exact/oversize bearing off, and victory. Beginner and intermediate NHPs are available; advanced and expert layers are deferred. Cube and match scoring are outside this initial checker-play version.
 
 QA: 390×844 portrait and 844×390 landscape in real iframe viewports. Completed 3–1 as 8/5 6/5 through mobile UI; DTG follows the revised exposure penalty; turn advanced. Revised DTG example verified as Black 27 ±10 / Red 24 ±1. The requested Red 23 ±1 conflicts with raw 23 plus adjustment 1; implementation follows the formula.
 
@@ -25,17 +26,17 @@ Verified reset/undo through UI, four-checker move with double twos, revised DTG 
 
 ## Automatic two-human orientation
 
-The physical board geometry stays fixed. A view transform starts at 90° for a new game's opening roll, faces Black at 0° or Red at 180° after the roll, and advances by 180° on each turn handoff. Animations last 1000 ms, fit every intermediate angle into the board viewport, and temporarily disable board input. Reduced-motion preferences skip animation. Dice stay centered and upright. Setup retains manual Flip; play uses automatic orientation. Undo/redo derive orientation from restored turn/opening state.
+The physical board model stays fixed. First load faces Black; New game preserves the actual current angle. Two-human handoffs rotate for the next player. With one human, automatic orientation faces that human. Rotation lasts 1400 ms with shrink, constant-size rotation, and expansion phases; reduced motion skips it.
 
 Board and bar stacks render every checker, without count badges. Point stacks overlap evenly when their full height exceeds the available triangle length. Verified a six-checker stack in browser (six discs, no text badge).
 
-Board text counter-rotates using the same animated angle as the board transform. BAR/OFF labels and all numeric text remain upright at rest and during the one-second rotation; centered HTML dice and controls remain upright independently. Verified the Red-facing endpoint and an intermediate rotation frame in the browser.
+Board text counter-rotates using the same animated angle as the board transform. Any SVG labels remain upright at rest and during rotation; centered HTML dice and controls remain upright independently. Verified the Red-facing endpoint and an intermediate rotation frame in the browser.
 
 Doubles batch placement fix: destination clicks require every selected checker's final destination to match the clicked point. Doubles plan buttons likewise exclude split destinations. Regression tests reproduce double twos with two checkers from 6 to 4 (two dice remain), and from 6 to 2 (all four dice consumed), plus group sizes 2–4.
 
 ## Direction indicator and off-section removal
 
-Removed both graphical OFF sections. Bearing off uses explicit move buttons, including when hints are disabled; setup has controls to retrieve a checker from off or remove a selected checker. Internal off totals and game rules remain unchanged.
+Bearing off uses the matching selectable home region on the board edge, with checkers shown on their sides. No Bear off button or OFF labels are needed. Free Setup can retrieve and place borne-off checkers.
 
 Centered U-shaped turn-color arrow is approximately half the Roll button width. In physical Black-facing coordinates, Black's arrow opens right with its head at bottom; Red's opens right with head at top. Applying the actual board rotation makes Red-facing presentation open left with head at bottom. The arrow follows board angle in play, setup and manual flips, including one-second animation, while text stays upright. Hidden before the opening winner is decided.
 
@@ -86,3 +87,36 @@ The center counter shows completed rounds: two completed player turns per round.
 Turn handoffs and a final winning turn count once each. The count is stored in
 the position, so undo, redo, reset, and reload preserve the appropriate value.
 Older saves have no turn history and begin tracking at zero after this update.
+
+## Beginner and intermediate NHPs
+
+Choose Human, Beginner NHP, or Intermediate NHP for each color in Settings.
+NHPs roll, choose a complete legal play, animate it, and end their own turns.
+Two NHPs can play automatically, including the opening roll. With one human,
+the opening roll is initiated manually. Pause/resume uses the toolbar control.
+Undo/redo and Free Setup pause NHP work until explicitly resumed. Opening Settings
+prevents queued actions from executing behind the dialog.
+
+The pure scripts/nhp.js layer groups equivalent legal resulting positions,
+recomputes delta/sum/individual connections, covering and safe-departure diagnostics,
+and evaluates covers, hits, made points, exposure, and both players’ DTG changes.
+Only the actual opening turn receives extra delta emphasis. No roll-probability
+exposure, opponent replies, simulations, advanced, or expert profiles are implemented.
+
+Initial beginner tuning chooses randomly 70% of the time; intermediate uses 25%.
+Each also has independently sampled pattern awareness and explicit feature weights.
+These are provisional tuning values, not calibrated strength or equal skill gaps.
+Winning plays are always preferred. The exported decision result includes features,
+noticed patterns, phase, and an explanation. Randomness can be supplied for repeatable tests.
+
+## Compact responsive layout
+
+Portrait uses the full available board area and packs scores and controls into
+stable rows. Legal move choices scroll horizontally beside status instead of
+reserving multiple blank rows. In landscape, scores and controls share a sidebar
+so the board can use the full available height. Dice, Roll dice, End Turn, and
+the blocked-bar continuation remain centered and mutually exclusive.
+
+Net DTG improvement is (own DTG before − own DTG after) +
+(opponent DTG after − opponent DTG before). The display and evaluation retain
+the original geometric exposure rule; no probability-based DTG is substituted.

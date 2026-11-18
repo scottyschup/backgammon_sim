@@ -1,4 +1,5 @@
-// Track distinct checkers through a complete selected play, including hits.
+(function initializeMotion(global) {
+  // Track distinct checkers through a complete selected play, including hits.
 function motionPaths(state, moves, color = state.turn) {
   const slots = new Map(),
     origins = new Map();
@@ -68,9 +69,10 @@ function departingState(state, paths) {
   return n;
 }
 
-globalThis.BackgammonLab = {
-  ...globalThis.BackgammonLab,
-  departingState,
-  motionPaths,
-  movementDuration,
-};
+  global.BackgammonLab = {
+    ...global.BackgammonLab,
+    departingState,
+    motionPaths,
+    movementDuration,
+  };
+})(globalThis);
